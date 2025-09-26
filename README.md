@@ -15,6 +15,7 @@ A vision document for a hybrid Digital Audio Workstation (DAW) and Unreal Engine
 10. [Safety, Monitoring & Reliability](#safety-monitoring--reliability)
 11. [Roadmap](#roadmap)
 12. [Appendix: Example Use Cases](#appendix-example-use-cases)
+13. [Prototype C++ Live Sequencer](#prototype-c-live-sequencer)
 
 ## Core Goals
 - **Unified creative environment** that connects DAWs (Ableton Live, Logic Pro, REAPER, etc.) with Unreal Engine for real-time audiovisual authoring.
@@ -144,6 +145,56 @@ The Kraken sits between traditional DAW workflows and immersive real-time render
 - **Interactive Installation**: Visitors' movements drive both generative soundscapes and volumetric light sculptures in a gallery setting.
 - **Narrative XR Experience**: Story beats determined by player choices; AI composes adaptive score while Unreal renders branching cinematics.
 - **Esports Broadcast**: Real-time highlights drive stingers, lower-thirds, and reactive music cues controlled by AI plus a human showcaller.
+
+## Prototype C++ Live Sequencer
+To complement the vision document, the repository now includes a **cross-platform C++ prototype** for a live performance sequencer that targets Windows 10/11 desktops and Android 7–15 devices. The goal is to provide a lightweight, timeline-driven scaffold that demonstrates how Kraken’s AI assistant, macro effect stacking, and controller routing can work together during a performance without loading every stem into memory at once.
+
+### Highlights
+- **Timeline-driven audio routing** with dynamically scheduled clips, infinite user-defined channel counts, and tempo-aware macro effects that can be stacked and linked for staged transitions.
+- **Three AI operating modes**:
+  1. *Passive Observe* – learns performer gestures during each session and retains evolving behaviour across sets.
+  2. *Collaborative Recommend* – surfaces tracks from the Hard Groove Wav Scroll Records Season 1–9 library (100 tracks per season, stems stored as zipped four-way splits and only unpacked temporarily when triggered).
+  3. *Autonomous Performer* – actively issues live performance suggestions aligned to the current beat grid.
+- **Controller abstraction layer** with built-in mappings for the Akai APC 64, Numark Party Mix, and Native Instruments Traktor X1 so the rig can expand to six decks or more.
+- **Platform-aware configuration** describing sample rates, buffer sizes, and interactive capabilities for both Windows and Android builds.
+
+### Repository Layout
+```
+src/
+  ai/              // AI assistant state machine and recommendation logic
+  audio/           // Timeline, mixer, clip loader, macro effect stack
+  controllers/     // Hardware abstraction layer for APC 64, Party Mix, X1
+  platform/        // Platform configuration descriptors (Windows & Android)
+  main.cpp         // Demo entry point running a simulated 20-step performance
+```
+
+### Build Instructions
+The project uses CMake (C++20) and produces a console demo executable (`kraken_cli`).
+
+#### Windows 10/11 (Visual Studio 2022)
+```powershell
+cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+cmake --build build --config Release
+build\\Release\\kraken_cli.exe
+```
+
+#### Android 7–15 (NDK r26+)
+```bash
+cmake -S . -B build-android \
+  -DCMAKE_SYSTEM_NAME=Android \
+  -DCMAKE_ANDROID_NDK=$ANDROID_NDK_HOME \
+  -DCMAKE_ANDROID_ARCH_ABI=arm64-v8a \
+  -DCMAKE_ANDROID_STL_TYPE=c++_shared \
+  -DCMAKE_ANDROID_API=24
+cmake --build build-android --config Release
+```
+Package the resulting shared library or executable with your preferred Android shell/NativeActivity launcher. The prototype is deliberately dependency-light so it can slot into existing Unreal or DAW companion apps.
+
+### Next Steps
+- Swap the stubbed clip loader for a streaming decoder (e.g., libsndfile or Oboe) that reads stems directly from zip archives into double-buffered ring buffers.
+- Integrate a deterministic timing source (Ableton Link, MIDI Clock, or Android AAudio callbacks) to drive `Timeline::forEachActiveClip` instead of the demo loop.
+- Extend `ControllerManager` to listen for real MIDI/USB HID inputs and publish OSC messages for Unreal/lighting rigs.
+- Wrap the core library with platform-native front ends (Win32/Qt, Android NativeActivity or JNI) to expose the UI required for live shows.
 
 ---
 
