@@ -8,6 +8,7 @@
 #include "audio/Clip.h"
 #include "audio/EffectChain.h"
 #include "audio/Mixer.h"
+#include "audio/StemResolver.h"
 #include "audio/Timeline.h"
 #include "controllers/ControllerManager.h"
 #include "platform/Platform.h"
@@ -15,8 +16,8 @@
 using namespace std::chrono_literals;
 
 namespace {
-std::filesystem::path demoStemZip(const std::string& trackId) {
-    return std::filesystem::path{"stems"} / (trackId + ".zip");
+kraken::audio::ClipSource demoStemSource(const std::string& trackId) {
+    return kraken::audio::resolveClipSource(trackId);
 }
 
 std::string controllerName(kraken::controllers::ControllerType type) {
@@ -102,7 +103,7 @@ int main() {
     controllers.addController(std::make_unique<NativeInstrumentsX1>());
 
     // Schedule clips without loading all stems simultaneously.
-    auto clipA = std::make_shared<Clip>("Season1 Intro Groove", demoStemZip("S1_HGWSR_001"), 64.0);
+    auto clipA = std::make_shared<Clip>("Season1 Intro Groove", demoStemSource("S1_HGWSR_001"), 64.0);
     ScheduledClip scA{
         .clip = clipA,
         .startBeat = 0.0,
@@ -117,7 +118,7 @@ int main() {
     scA.effects.linkEffects(fxChainA, "macro_downbeat_transition");
     timeline.scheduleClip(deckATrack, std::move(scA));
 
-    auto clipB = std::make_shared<Clip>("Season4 Perc Loop", demoStemZip("S4_HGWSR_042"), 32.0);
+    auto clipB = std::make_shared<Clip>("Season4 Perc Loop", demoStemSource("S4_HGWSR_042"), 32.0);
     ScheduledClip scB{
         .clip = clipB,
         .startBeat = 32.0,

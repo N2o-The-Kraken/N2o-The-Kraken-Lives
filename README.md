@@ -190,6 +190,23 @@ cmake --build build-android --config Release
 ```
 Package the resulting shared library or executable with your preferred Android shell/NativeActivity launcher. The prototype is deliberately dependency-light so it can slot into existing Unreal or DAW companion apps.
 
+### Configuring stem locations
+The runtime looks for a JSON manifest at `assets/stems/stems_manifest.json` that maps track IDs to local stem assets:
+
+```json
+{
+  "TRACK_ID": { "type": "zip" | "wav_dir" | "audio_file", "path": "relative/or/absolute/path" }
+}
+```
+
+- `zip` – single archive containing four-way stems (matches the legacy demo behaviour).
+- `wav_dir` – directory containing per-stem WAV files; the resolver verifies the directory exists before loading.
+- `audio_file` – single flattened render for quick demos.
+
+When you install the project (`cmake --install <build>`), the `assets/stems` directory (including `stems_manifest.json`) is copied alongside the deployed stems so you can edit it on the target machine. Update `path` values in the installed manifest to point at your personal stem folders—absolute paths are supported, as are relative paths resolved against the manifest’s directory.
+
+For portable setups, set the `KRAKEN_STEM_MANIFEST` environment variable to the manifest you want to use before launching `kraken_cli`. This allows the demo to target removable drives or synced cloud folders without rewriting the installed manifest.
+
 ### Next Steps
 - Swap the stubbed clip loader for a streaming decoder (e.g., libsndfile or Oboe) that reads stems directly from zip archives into double-buffered ring buffers.
 - Integrate a deterministic timing source (Ableton Link, MIDI Clock, or Android AAudio callbacks) to drive `Timeline::forEachActiveClip` instead of the demo loop.
