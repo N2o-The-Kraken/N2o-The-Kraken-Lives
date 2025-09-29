@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+#include "audio/ClipSource.h"
+
 namespace kraken::audio {
 
 struct ClipBuffer {
@@ -17,15 +19,15 @@ struct ClipBuffer {
 
 class Clip {
 public:
-    Clip(std::string name, std::filesystem::path zipPath, double lengthSeconds);
+    Clip(std::string name, ClipSource source, double lengthSeconds);
 
     [[nodiscard]] const std::string& name() const noexcept { return m_name; }
-    [[nodiscard]] const std::filesystem::path& zipPath() const noexcept { return m_zipPath; }
+    [[nodiscard]] const ClipSource& source() const noexcept { return m_source; }
     [[nodiscard]] double lengthSeconds() const noexcept { return m_lengthSeconds; }
 
     [[nodiscard]] bool isPrepared() const noexcept { return m_buffer.has_value(); }
 
-    /// Loads the clip from the zipped stem archive into a temporary buffer.
+    /// Loads the clip from the configured stem source into a temporary buffer.
     void prepare();
 
     /// Releases the temporary buffer to maintain lightweight memory usage.
@@ -35,7 +37,7 @@ public:
 
 private:
     std::string m_name;
-    std::filesystem::path m_zipPath;
+    ClipSource m_source;
     double m_lengthSeconds;
     std::optional<ClipBuffer> m_buffer;
 };
