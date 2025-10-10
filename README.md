@@ -172,20 +172,16 @@ src/
 The project uses CMake (C++20) and produces a console demo executable (`kraken_cli`).
 
 #### Third-party audio dependencies
-`kraken_core` relies on a few lightweight decoders. By default the build searches for system
-installations and **does not download** anything. Set `-DKRAKEN_ALLOW_FETCHCONTENT=ON` if you would
-like CMake to fetch the libraries automatically.
+`kraken_core` now links against a small set of decoding libraries that are fetched automatically via
+`FetchContent`:
 
-- [libsndfile](https://github.com/libsndfile/libsndfile) supplies streamed WAV decoding. Without it
-  the loader surfaces a runtime error when a clip is prepared.
-- [minizip-ng](https://github.com/zlib-ng/minizip-ng) enables reading zipped stem bundles. Without
-  it, ZIP clip sources will report an error during preparation.
-- [minimp3](https://github.com/lieff/minimp3) enables streaming MP3 decoding. When it isn't
-  available the loader reports a descriptive error during clip preparation.
+- [minizip-ng](https://github.com/zlib-ng/minizip-ng) for streaming stems out of zipped stem bundles.
+- [libsndfile](https://github.com/libsndfile/libsndfile) (or a system-provided `sndfile`) for WAV decoding.
+- [minimp3](https://github.com/lieff/minimp3) for MP3 decoding.
 
-All three dependencies can be satisfied by pre-installing the libraries or by pointing
-`CMAKE_PREFIX_PATH` to their locations. Offline builds succeed even when the libraries are missing;
-the loader will simply surface descriptive errors when a clip requests an unsupported format.
+No manual setup is required when using CMake 3.16+ with an internet connection. When working in
+offline environments, make sure the libraries are installed and discoverable on the system include
+and library paths before configuring the project.
 
 #### Windows 10/11 (Visual Studio 2022)
 ```powershell

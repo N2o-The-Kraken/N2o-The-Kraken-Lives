@@ -29,90 +29,40 @@ add_library(kraken_core
 
 target_include_directories(kraken_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-set(KRAKEN_HAS_SNDFILE OFF)
-set(KRAKEN_HAS_MINIZIP OFF)
-set(KRAKEN_HAS_MINIMP3 OFF)
+FetchContent_Declare(minimp3
+    GIT_REPOSITORY https://github.com/lieff/minimp3.git
+    GIT_TAG master)
+FetchContent_GetProperties(minimp3)
+if(NOT minimp3_POPULATED)
+    FetchContent_Populate(minimp3)
+endif()
 
-set(KRAKEN_CORE_DEPS)
+FetchContent_Declare(minizip
+    GIT_REPOSITORY https://github.com/zlib-ng/minizip-ng.git
+    GIT_TAG 4.0.3)
+FetchContent_MakeAvailable(minizip)
 
 find_package(SndFile QUIET)
-if(SndFile_FOUND)
-    set(KRAKEN_HAS_SNDFILE ON)
-    list(APPEND KRAKEN_CORE_DEPS SndFile::sndfile)
-elseif(KRAKEN_ALLOW_FETCHCONTENT)
+if(NOT SndFile_FOUND)
     FetchContent_Declare(libsndfile
         GIT_REPOSITORY https://github.com/libsndfile/libsndfile.git
         GIT_TAG 1.2.2)
     FetchContent_MakeAvailable(libsndfile)
-    set(KRAKEN_HAS_SNDFILE ON)
-    list(APPEND KRAKEN_CORE_DEPS sndfile)
+    set(KRAKEN_SNDFILE_TARGET sndfile)
 else()
-    message(WARNING "libsndfile not found; WAV decoding will be disabled")
+    set(KRAKEN_SNDFILE_TARGET SndFile::sndfile)
 endif()
 
-if(KRAKEN_ENABLE_ZIP)
-    find_package(minizip CONFIG QUIET)
-    if(minizip_FOUND)
-        set(KRAKEN_HAS_MINIZIP ON)
-        list(APPEND KRAKEN_CORE_DEPS minizip::minizip)
-    else()
-        find_path(MINIZIP_INCLUDE_DIR NAMES minizip/unzip.h)
-        find_library(MINIZIP_LIBRARY NAMES minizip minizip-ng)
-        if(MINIZIP_INCLUDE_DIR AND MINIZIP_LIBRARY)
-            set(KRAKEN_HAS_MINIZIP ON)
-            target_include_directories(kraken_core PRIVATE ${MINIZIP_INCLUDE_DIR})
-            list(APPEND KRAKEN_CORE_DEPS ${MINIZIP_LIBRARY})
-        elseif(KRAKEN_ALLOW_FETCHCONTENT)
-            FetchContent_Declare(minizip
-                GIT_REPOSITORY https://github.com/zlib-ng/minizip-ng.git
-                GIT_TAG 4.0.3)
-            FetchContent_MakeAvailable(minizip)
-            set(KRAKEN_HAS_MINIZIP ON)
-            list(APPEND KRAKEN_CORE_DEPS minizip::minizip)
-        else()
-            message(WARNING "minizip not found; ZIP stem bundles will be disabled")
-        endif()
-    endif()
+if(NOT KRAKEN_SNDFILE_TARGET)
+    message(FATAL_ERROR "Unable to locate libsndfile")
 endif()
 
-if(KRAKEN_ENABLE_MP3)
-    find_path(MINIMP3_INCLUDE_DIR NAMES minimp3_ex.h PATH_SUFFIXES minimp3)
-    if(MINIMP3_INCLUDE_DIR)
-        set(KRAKEN_HAS_MINIMP3 ON)
-        target_include_directories(kraken_core PRIVATE ${MINIMP3_INCLUDE_DIR})
-    elseif(KRAKEN_ALLOW_FETCHCONTENT)
-        FetchContent_Declare(minimp3
-            GIT_REPOSITORY https://github.com/lieff/minimp3.git
-            GIT_TAG master)
-        FetchContent_MakeAvailable(minimp3)
-        set(KRAKEN_HAS_MINIMP3 ON)
-        target_include_directories(kraken_core PRIVATE ${minimp3_SOURCE_DIR})
-    else()
-        message(WARNING "minimp3 not found; MP3 decoding will be disabled")
-    endif()
-endif()
+target_link_libraries(kraken_core
+    PUBLIC
+        ${KRAKEN_SNDFILE_TARGET}
+        minizip::minizip)
 
-if(KRAKEN_CORE_DEPS)
-    target_link_libraries(kraken_core PUBLIC ${KRAKEN_CORE_DEPS})
-endif()
-
-if(KRAKEN_HAS_SNDFILE)
-    target_compile_definitions(kraken_core PRIVATE KRAKEN_HAS_SNDFILE=1)
-endif()
-
-if(KRAKEN_HAS_MINIZIP)
-    target_compile_definitions(kraken_core PRIVATE KRAKEN_HAS_MINIZIP=1)
-endif()
-
-if(KRAKEN_HAS_MINIMP3)
-    target_compile_definitions(kraken_core PRIVATE KRAKEN_HAS_MINIMP3=1)
-
-    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-        set_source_files_properties(src/audio/Minimp3Decoder.cpp PROPERTIES COMPILE_OPTIONS "-w")
-    elseif(MSVC)
-        set_source_files_properties(src/audio/Minimp3Decoder.cpp PROPERTIES COMPILE_OPTIONS "/w")
-    endif()
-endif()
+target_include_directories(kraken_core PRIVATE ${minimp3_SOURCE_DIR})
 
 add_executable(kraken_cli src/main.cpp)
 target_link_libraries(kraken_cli PRIVATE kraken_core)
