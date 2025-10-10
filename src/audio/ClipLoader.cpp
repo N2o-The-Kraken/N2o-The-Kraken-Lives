@@ -167,7 +167,7 @@ ClipLoader::Result loadWithSndfile(const AudioFileClipSource& file, double expec
 
 ClipLoader::Result loadAudioFile(const AudioFileClipSource& file, double expectedLengthSeconds) {
 #if KRAKEN_HAS_SNDFILE
-    if (!file.isMp3 || KRAKEN_HAS_MINIMP3) {
+    if (!file.isMp3 || !KRAKEN_HAS_MINIMP3) {
         return loadWithSndfile(file, expectedLengthSeconds);
     }
     return makeError("MP3 decoding requested but minimp3 support is disabled at build time.");
