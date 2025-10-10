@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 project(KrakenLiveSequencer LANGUAGES CXX)
 
 include(GNUInstallDirs)
+include(FetchContent)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -12,6 +13,7 @@ option(KRAKEN_BUILD_TESTS "Build Kraken unit tests" OFF)
 add_library(kraken_core
     src/ai/AIAssistant.cpp
     src/audio/ClipSource.cpp
+    src/audio/ClipLoader.cpp
     src/audio/Clip.cpp
     src/audio/EffectChain.cpp
     src/audio/Mixer.cpp
@@ -22,6 +24,41 @@ add_library(kraken_core
 )
 
 target_include_directories(kraken_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+FetchContent_Declare(minimp3
+    GIT_REPOSITORY https://github.com/lieff/minimp3.git
+    GIT_TAG master)
+FetchContent_GetProperties(minimp3)
+if(NOT minimp3_POPULATED)
+    FetchContent_Populate(minimp3)
+endif()
+
+FetchContent_Declare(minizip
+    GIT_REPOSITORY https://github.com/zlib-ng/minizip-ng.git
+    GIT_TAG 4.0.3)
+FetchContent_MakeAvailable(minizip)
+
+find_package(SndFile QUIET)
+if(NOT SndFile_FOUND)
+    FetchContent_Declare(libsndfile
+        GIT_REPOSITORY https://github.com/libsndfile/libsndfile.git
+        GIT_TAG 1.2.2)
+    FetchContent_MakeAvailable(libsndfile)
+    set(KRAKEN_SNDFILE_TARGET sndfile)
+else()
+    set(KRAKEN_SNDFILE_TARGET SndFile::sndfile)
+endif()
+
+if(NOT KRAKEN_SNDFILE_TARGET)
+    message(FATAL_ERROR "Unable to locate libsndfile")
+endif()
+
+target_link_libraries(kraken_core
+    PUBLIC
+        ${KRAKEN_SNDFILE_TARGET}
+        minizip::minizip)
+
+target_include_directories(kraken_core PRIVATE ${minimp3_SOURCE_DIR})
 
 add_executable(kraken_cli src/main.cpp)
 target_link_libraries(kraken_cli PRIVATE kraken_core)

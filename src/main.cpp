@@ -3,6 +3,7 @@
 #include <iostream>
 #include <memory>
 #include <thread>
+#include <string>
 
 #include "ai/AIAssistant.h"
 #include "audio/Clip.h"
@@ -150,7 +151,15 @@ int main() {
         timeline.forEachActiveClip(currentBeat, [&](const ScheduledClip& clip) {
             if (!clip.clip->isPrepared()) {
                 std::cout << "Preparing clip: " << clip.clip->name() << '\n';
-                clip.clip->prepare();
+                std::string prepareError;
+                if (!clip.clip->prepare(&prepareError)) {
+                    std::cout << "Failed to prepare clip: " << clip.clip->name();
+                    if (!prepareError.empty()) {
+                        std::cout << " (" << prepareError << ")";
+                    }
+                    std::cout << '\n';
+                    return;
+                }
             }
             std::cout << "Active clip: " << clip.clip->name() << " | length " << clip.clip->lengthSeconds() << "s" << '\n';
             for (const auto& effect : clip.effects.activeEffects(currentBeat)) {
