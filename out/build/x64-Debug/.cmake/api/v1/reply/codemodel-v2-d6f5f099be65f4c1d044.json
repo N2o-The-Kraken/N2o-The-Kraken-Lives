@@ -1,0 +1,69 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"jsonFile" : "directory-.-Debug-d0094a50bb2071803777.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.16"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "KrakenLiveSequencer",
+					"targetIndexes" : 
+					[
+						0,
+						1
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "kraken_cli::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-kraken_cli-Debug-efd3e6a49230836f8e22.json",
+					"name" : "kraken_cli",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "kraken_core::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-kraken_core-Debug-0114ce58f43c2c0ef7fa.json",
+					"name" : "kraken_core",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "E:/Users/NiTRO/source/repos/N2o-The-Kraken/https-github.com-N2o-The-Kraken/out/build/x64-Debug",
+		"source" : "E:/Users/NiTRO/source/repos/N2o-The-Kraken/https-github.com-N2o-The-Kraken"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 8
+	}
+}
