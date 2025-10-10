@@ -90,20 +90,20 @@ void runStemResolverSmokeTests() {
     env.set(manifestPath.string());
 
     const auto zipSource = kraken::audio::resolveClipSource("ZIP_TRACK");
-    assert(zipSource.type == kraken::audio::ClipSourceType::ZipArchive);
-    assert(std::filesystem::equivalent(zipSource.path, zipFile));
+    assert(kraken::audio::clipSourceType(zipSource) == kraken::audio::ClipSourceType::ZipArchive);
+    assert(std::filesystem::equivalent(kraken::audio::clipSourcePath(zipSource), zipFile));
 
     const auto dirSource = kraken::audio::resolveClipSource("DIR_TRACK");
-    assert(dirSource.type == kraken::audio::ClipSourceType::WavDirectory);
-    assert(std::filesystem::equivalent(dirSource.path, wavDir));
+    assert(kraken::audio::clipSourceType(dirSource) == kraken::audio::ClipSourceType::WavDirectory);
+    assert(std::filesystem::equivalent(kraken::audio::clipSourcePath(dirSource), wavDir));
 
     const auto fileSource = kraken::audio::resolveClipSource("FILE_TRACK");
-    assert(fileSource.type == kraken::audio::ClipSourceType::AudioFile);
-    assert(std::filesystem::equivalent(fileSource.path, audioFile));
+    assert(kraken::audio::clipSourceType(fileSource) == kraken::audio::ClipSourceType::AudioFile);
+    assert(std::filesystem::equivalent(kraken::audio::clipSourcePath(fileSource), audioFile));
 
     const auto fallbackSource = kraken::audio::resolveClipSource("UNKNOWN_TRACK");
-    assert(fallbackSource.type == kraken::audio::ClipSourceType::ZipArchive);
-    assert(fallbackSource.path == std::filesystem::path{"stems"} / "UNKNOWN_TRACK.zip");
+    assert(kraken::audio::clipSourceType(fallbackSource) == kraken::audio::ClipSourceType::ZipArchive);
+    assert(kraken::audio::clipSourcePath(fallbackSource) == std::filesystem::path{"stems"} / "UNKNOWN_TRACK.zip");
 
     const auto overrideZip = tempRoot / "override.zip";
     std::ofstream(overrideZip) << "zip";
@@ -117,7 +117,7 @@ void runStemResolverSmokeTests() {
 
     env.set(overrideManifest.string());
     const auto overriddenSource = kraken::audio::resolveClipSource("ZIP_TRACK");
-    assert(std::filesystem::equivalent(overriddenSource.path, overrideZip));
+    assert(std::filesystem::equivalent(kraken::audio::clipSourcePath(overriddenSource), overrideZip));
 
     env.clear();
     fs::remove_all(tempRoot);

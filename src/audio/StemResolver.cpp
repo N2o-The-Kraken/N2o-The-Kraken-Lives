@@ -1,6 +1,7 @@
 #include "audio/StemResolver.h"
 
 #include <algorithm>
+#include <array>
 #include <cctype>
 #include <cstdlib>
 #include <filesystem>
@@ -72,6 +73,49 @@ std::optional<ClipSourceType> parseClipSourceType(const std::string& rawType) {
     return std::nullopt;
 }
 
+std::vector<ClipChannelMetadata> defaultMetadata(std::size_t count) {
+    std::vector<ClipChannelMetadata> metadata;
+    static const std::array<std::string, 4> defaultDescriptions = {"Drums", "Bass", "Music", "Vocals"};
+    metadata.reserve(count);
+    for (std::size_t i = 0; i < count; ++i) {
+        ClipChannelMetadata channel;
+        channel.id = "channel_" + std::to_string(i + 1);
+        channel.description = i < defaultDescriptions.size() ? defaultDescriptions[i]
+                                                             : "Stem " + std::to_string(i + 1);
+        metadata.push_back(std::move(channel));
+    }
+    return metadata;
+}
+
+ClipSource makeClipSource(ClipSourceType type, std::filesystem::path path) {
+    ClipSource clipSource;
+    switch (type) {
+        case ClipSourceType::ZipArchive: {
+            ZipClipSource zip{};
+            zip.archive = std::move(path);
+            zip.channels = defaultMetadata(4);
+            clipSource.source = std::move(zip);
+            break;
+        }
+        case ClipSourceType::WavDirectory: {
+            WavDirectoryClipSource directory{};
+            directory.directory = std::move(path);
+            directory.channels = defaultMetadata(4);
+            clipSource.source = std::move(directory);
+            break;
+        }
+        case ClipSourceType::AudioFile: {
+            AudioFileClipSource file{};
+            file.file = std::move(path);
+            file.isMp3 = toLower(file.file.extension().string()) == ".mp3";
+            file.channels = defaultMetadata(2);
+            clipSource.source = std::move(file);
+            break;
+        }
+    }
+    return clipSource;
+}
+
 std::unordered_map<std::string, ClipSource> parseManifest(
     const std::filesystem::path& manifestPath,
     std::vector<std::string>& warnings) {
@@ -124,7 +168,7 @@ std::unordered_map<std::string, ClipSource> parseManifest(
             path = (manifestPath.parent_path() / path).lexically_normal();
         }
 
-        entries.emplace(trackId, ClipSource{*maybeType, std::move(path)});
+        entries.emplace(trackId, makeClipSource(*maybeType, std::move(path)));
     }
 
     return entries;
@@ -139,32 +183,34 @@ bool pathLooksLikeZip(const std::filesystem::path& path) {
 }
 
 bool validateSourcePath(const std::string& trackId, const ClipSource& source) {
-    switch (source.type) {
+    const auto type = clipSourceType(source);
+    const auto path = clipSourcePath(source);
+    switch (type) {
         case ClipSourceType::ZipArchive: {
-            if (!pathLooksLikeZip(source.path)) {
+            if (!pathLooksLikeZip(path)) {
                 std::cerr << "Warning: manifest entry for " << trackId
-                          << " is marked as zip but does not use a .zip extension (" << source.path << ")\n";
+                          << " is marked as zip but does not use a .zip extension (" << path << ")\n";
                 return false;
             }
-            if (!std::filesystem::exists(source.path) || !std::filesystem::is_regular_file(source.path)) {
+            if (!std::filesystem::exists(path) || !std::filesystem::is_regular_file(path)) {
                 std::cerr << "Warning: manifest entry for " << trackId
-                          << " points to missing archive " << source.path << '\n';
+                          << " points to missing archive " << path << '\n';
                 return false;
             }
             return true;
         }
         case ClipSourceType::WavDirectory: {
-            if (!std::filesystem::exists(source.path) || !std::filesystem::is_directory(source.path)) {
+            if (!std::filesystem::exists(path) || !std::filesystem::is_directory(path)) {
                 std::cerr << "Warning: manifest entry for " << trackId
-                          << " points to missing directory " << source.path << '\n';
+                          << " points to missing directory " << path << '\n';
                 return false;
             }
             return true;
         }
         case ClipSourceType::AudioFile: {
-            if (!std::filesystem::exists(source.path) || !std::filesystem::is_regular_file(source.path)) {
+            if (!std::filesystem::exists(path) || !std::filesystem::is_regular_file(path)) {
                 std::cerr << "Warning: manifest entry for " << trackId
-                          << " points to missing audio file " << source.path << '\n';
+                          << " points to missing audio file " << path << '\n';
                 return false;
             }
             return true;
@@ -217,10 +263,8 @@ ClipSource resolveClipSource(const std::string& trackId) {
         return *fromManifest;
     }
 
-    ClipSource fallback;
-    fallback.type = ClipSourceType::ZipArchive;
-    fallback.path = std::filesystem::path{"stems"} / (trackId + ".zip");
-    return fallback;
+    return makeClipSource(ClipSourceType::ZipArchive,
+                          std::filesystem::path{"stems"} / (trackId + ".zip"));
 }
 
 } // namespace kraken::audio

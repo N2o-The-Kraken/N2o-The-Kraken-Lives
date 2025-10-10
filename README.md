@@ -171,6 +171,22 @@ src/
 ### Build Instructions
 The project uses CMake (C++20) and produces a console demo executable (`kraken_cli`).
 
+#### Third-party audio dependencies
+`kraken_core` relies on a few lightweight decoders. By default the build searches for system
+installations and **does not download** anything. Set `-DKRAKEN_ALLOW_FETCHCONTENT=ON` if you would
+like CMake to fetch the libraries automatically.
+
+- [libsndfile](https://github.com/libsndfile/libsndfile) supplies streamed WAV decoding. Without it
+  the loader surfaces a runtime error when a clip is prepared.
+- [minizip-ng](https://github.com/zlib-ng/minizip-ng) enables reading zipped stem bundles. Without
+  it, ZIP clip sources will report an error during preparation.
+- [minimp3](https://github.com/lieff/minimp3) enables streaming MP3 decoding. When it isn't
+  available the loader reports a descriptive error during clip preparation.
+
+All three dependencies can be satisfied by pre-installing the libraries or by pointing
+`CMAKE_PREFIX_PATH` to their locations. Offline builds succeed even when the libraries are missing;
+the loader will simply surface descriptive errors when a clip requests an unsupported format.
+
 #### Windows 10/11 (Visual Studio 2022)
 ```powershell
 cmake -S . -B build -G "Visual Studio 17 2022" -A x64
@@ -198,6 +214,10 @@ The runtime looks for a JSON manifest at `assets/stems/stems_manifest.json` that
   "TRACK_ID": { "type": "zip" | "wav_dir" | "audio_file", "path": "relative/or/absolute/path" }
 }
 ```
+
+Each source type is resolved to a `ClipSource` variant at runtime, preserving per-channel metadata so
+that the new loader can stream and decode stems incrementally instead of loading raw archives into
+memory.
 
 - `zip` – single archive containing four-way stems (matches the legacy demo behaviour).
 - `wav_dir` – directory containing per-stem WAV files; the resolver verifies the directory exists before loading.
