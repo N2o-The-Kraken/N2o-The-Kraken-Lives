@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstddef>
-#include <filesystem>
 #include <memory>
 #include <optional>
 #include <string>
@@ -11,10 +10,27 @@
 
 namespace kraken::audio {
 
-struct ClipBuffer {
-    std::vector<std::byte> data;
-    std::size_t channels{};
+struct ClipStreamChunk {
+    std::vector<std::vector<float>> channels;
     std::size_t frames{};
+};
+
+class ClipStream {
+public:
+    virtual ~ClipStream() = default;
+
+    [[nodiscard]] virtual double sampleRate() const noexcept = 0;
+    [[nodiscard]] virtual std::size_t channelCount() const noexcept = 0;
+    [[nodiscard]] virtual const std::vector<ClipChannelMetadata>& metadata() const noexcept = 0;
+    [[nodiscard]] virtual std::size_t chunkSize() const noexcept = 0;
+    [[nodiscard]] virtual std::optional<std::size_t> totalFrames() const noexcept = 0;
+
+    virtual bool next(ClipStreamChunk& chunk) = 0;
+    virtual void reset() = 0;
+};
+
+struct ClipBuffer {
+    std::shared_ptr<ClipStream> stream;
 };
 
 class Clip {
@@ -25,10 +41,10 @@ public:
     [[nodiscard]] const ClipSource& source() const noexcept { return m_source; }
     [[nodiscard]] double lengthSeconds() const noexcept { return m_lengthSeconds; }
 
-    [[nodiscard]] bool isPrepared() const noexcept { return m_buffer.has_value(); }
+    [[nodiscard]] bool isPrepared() const noexcept { return m_buffer.has_value() && m_buffer->stream; }
 
     /// Loads the clip from the configured stem source into a temporary buffer.
-    void prepare();
+    bool prepare(std::string* errorOut = nullptr);
 
     /// Releases the temporary buffer to maintain lightweight memory usage.
     void release();

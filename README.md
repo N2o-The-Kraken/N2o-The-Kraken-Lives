@@ -171,6 +171,18 @@ src/
 ### Build Instructions
 The project uses CMake (C++20) and produces a console demo executable (`kraken_cli`).
 
+#### Third-party audio dependencies
+`kraken_core` now links against a small set of decoding libraries that are fetched automatically via
+`FetchContent`:
+
+- [minizip-ng](https://github.com/zlib-ng/minizip-ng) for streaming stems out of zipped stem bundles.
+- [libsndfile](https://github.com/libsndfile/libsndfile) (or a system-provided `sndfile`) for WAV decoding.
+- [minimp3](https://github.com/lieff/minimp3) for MP3 decoding.
+
+No manual setup is required when using CMake 3.16+ with an internet connection. When working in
+offline environments, make sure the libraries are installed and discoverable on the system include
+and library paths before configuring the project.
+
 #### Windows 10/11 (Visual Studio 2022)
 ```powershell
 cmake -S . -B build -G "Visual Studio 17 2022" -A x64
@@ -198,6 +210,10 @@ The runtime looks for a JSON manifest at `assets/stems/stems_manifest.json` that
   "TRACK_ID": { "type": "zip" | "wav_dir" | "audio_file", "path": "relative/or/absolute/path" }
 }
 ```
+
+Each source type is resolved to a `ClipSource` variant at runtime, preserving per-channel metadata so
+that the new loader can stream and decode stems incrementally instead of loading raw archives into
+memory.
 
 - `zip` – single archive containing four-way stems (matches the legacy demo behaviour).
 - `wav_dir` – directory containing per-stem WAV files; the resolver verifies the directory exists before loading.
