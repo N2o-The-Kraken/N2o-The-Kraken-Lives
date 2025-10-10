@@ -9,6 +9,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(KRAKEN_BUILD_TESTS "Build Kraken unit tests" OFF)
+option(KRAKEN_ALLOW_FETCHCONTENT "Allow CMake to download optional third-party dependencies" OFF)
+option(KRAKEN_ENABLE_ZIP "Enable ZIP stem bundle support" ON)
+option(KRAKEN_ENABLE_MP3 "Enable MP3 decoding support" ON)
 
 add_library(kraken_core
     src/ai/AIAssistant.cpp
@@ -19,6 +22,7 @@ add_library(kraken_core
     src/audio/Mixer.cpp
     src/audio/Timeline.cpp
     src/audio/StemResolver.cpp
+    src/audio/Minimp3Decoder.cpp
     src/controllers/ControllerManager.cpp
     src/platform/Platform.cpp
 )
