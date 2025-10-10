@@ -48,6 +48,8 @@ public:
 
     void onMessage(const std::function<void(ControllerType, const ControlMessage&)>& handler);
 
+    void emitVirtualMessage(ControllerType type, const ControlMessage& message) const;
+
 private:
     std::vector<std::unique_ptr<Controller>> m_controllers;
     std::function<void(ControllerType, const ControlMessage&)> m_handler;

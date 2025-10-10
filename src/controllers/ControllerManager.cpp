@@ -30,4 +30,10 @@ void ControllerManager::onMessage(const std::function<void(ControllerType, const
     m_handler = handler;
 }
 
+void ControllerManager::emitVirtualMessage(ControllerType type, const ControlMessage& message) const {
+    if (m_handler) {
+        m_handler(type, message);
+    }
+}
+
 } // namespace kraken::controllers
