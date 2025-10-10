@@ -171,6 +171,13 @@ src/
 ### Build Instructions
 The project uses CMake (C++20) and produces a console demo executable (`kraken_cli`).
 
+#### JUCE-powered standalone UI
+Kraken now bundles a JUCE 8 runtime that surfaces audio-device routing, MIDI discovery, and
+AI/timeline status in a desktop window. Configure CMake with `-DKRAKEN_ENABLE_JUCE=ON`; when
+combined with `-DKRAKEN_ALLOW_FETCHCONTENT=ON` the build will automatically fetch the JUCE 8.0.1
+modules via `FetchContent`. Pass `--juce` (or `--juce-android` to mirror the Android platform
+configuration) to `kraken_cli` to launch the interactive UI instead of the console-only demo loop.
+
 #### Third-party audio dependencies
 `kraken_core` now links against a small set of decoding libraries that are fetched automatically via
 `FetchContent`:

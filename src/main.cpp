@@ -2,8 +2,9 @@
 #include <filesystem>
 #include <iostream>
 #include <memory>
-#include <thread>
 #include <string>
+#include <string_view>
+#include <thread>
 
 #include "ai/AIAssistant.h"
 #include "audio/Clip.h"
@@ -12,6 +13,7 @@
 #include "audio/StemResolver.h"
 #include "audio/Timeline.h"
 #include "controllers/ControllerManager.h"
+#include "platform/JuceApp.h"
 #include "platform/Platform.h"
 
 using namespace std::chrono_literals;
@@ -34,7 +36,7 @@ std::string controllerName(kraken::controllers::ControllerType type) {
 }
 }
 
-int main() {
+int main(int argc, char** argv) {
     using kraken::ai::AIAssistant;
     using kraken::ai::AIMode;
     using kraken::audio::Clip;
@@ -50,6 +52,19 @@ int main() {
     using kraken::platform::Platform;
     using kraken::platform::PlatformConfig;
     using kraken::platform::PlatformType;
+
+    bool launchJuce = false;
+    PlatformType requestedPlatform = PlatformType::Windows;
+
+    for (int i = 1; i < argc; ++i) {
+        const std::string_view arg{argv[i]};
+        if (arg == "--juce") {
+            launchJuce = true;
+        } else if (arg == "--juce-android") {
+            launchJuce = true;
+            requestedPlatform = PlatformType::Android;
+        }
+    }
 
     Platform windowsPlatform({
         .type = PlatformType::Windows,
@@ -133,6 +148,29 @@ int main() {
         .activationEndBeat = 64.0});
     scB.effects.linkEffects(fxChainB, "macro_downbeat_transition");
     timeline.scheduleClip(deckBTrack, std::move(scB));
+
+    if (launchJuce) {
+#if KRAKEN_HAS_JUCE
+        const auto platformConfig = requestedPlatform == PlatformType::Android ? androidPlatform.config() : windowsPlatform.config();
+        kraken::platform::JuceLaunchOptions options{
+            .platform = platformConfig,
+            .mixer = mixer,
+            .timeline = timeline,
+            .controllers = controllers,
+            .assistant = assistant};
+        const int result = kraken::platform::launchJuceSession(options);
+        clipA->release();
+        clipB->release();
+        assistant.endSession();
+        return result;
+#else
+        std::cerr << "This build of Kraken does not include JUCE support. Reconfigure with KRAKEN_ENABLE_JUCE=ON.\n";
+        clipA->release();
+        clipB->release();
+        assistant.endSession();
+        return 2;
+#endif
+    }
 
     assistant.setMode(AIMode::CollaborativeRecommend);
     const auto recs = assistant.recommendTracks("groove", 3);
