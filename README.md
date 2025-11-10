@@ -155,6 +155,7 @@ To complement the vision document, the repository now includes a **cross-platfor
   1. *Passive Observe* – learns performer gestures during each session and retains evolving behaviour across sets.
   2. *Collaborative Recommend* – surfaces tracks from the Hard Groove Wav Scroll Records Season 1–9 library (100 tracks per season, stems stored as zipped four-way splits and only unpacked temporarily when triggered).
   3. *Autonomous Performer* – actively issues live performance suggestions aligned to the current beat grid.
+- **Modular runtime orchestration** driven by `ModuleOrchestrator`, which stacks the mixer, timeline, controller, and clip scheduling modules from the main script. Each module failure automatically triggers the new AI debugger stub so issues are logged and surfaced for manual repair until a real remediation model is added.
 - **Controller abstraction layer** with built-in mappings for the Akai APC 64, Numark Party Mix, and Native Instruments Traktor X1 so the rig can expand to six decks or more.
 - **Platform-aware configuration** describing sample rates, buffer sizes, and interactive capabilities for both Windows and Android builds.
 
@@ -170,6 +171,13 @@ src/
 
 ### Build Instructions
 The project uses CMake (C++20) and produces a console demo executable (`kraken_cli`).
+
+#### JUCE-powered standalone UI
+Kraken now bundles a JUCE 8 runtime that surfaces audio-device routing, MIDI discovery, and
+AI/timeline status in a desktop window. Configure CMake with `-DKRAKEN_ENABLE_JUCE=ON`; when
+combined with `-DKRAKEN_ALLOW_FETCHCONTENT=ON` the build will automatically fetch the JUCE 8.0.1
+modules via `FetchContent`. Pass `--juce` (or `--juce-android` to mirror the Android platform
+configuration) to `kraken_cli` to launch the interactive UI instead of the console-only demo loop.
 
 #### Third-party audio dependencies
 `kraken_core` now links against a small set of decoding libraries that are fetched automatically via

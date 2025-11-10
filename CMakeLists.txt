@@ -12,6 +12,7 @@ option(KRAKEN_BUILD_TESTS "Build Kraken unit tests" OFF)
 option(KRAKEN_ALLOW_FETCHCONTENT "Allow CMake to download optional third-party dependencies" OFF)
 option(KRAKEN_ENABLE_ZIP "Enable ZIP stem bundle support" ON)
 option(KRAKEN_ENABLE_MP3 "Enable MP3 decoding support" ON)
+option(KRAKEN_ENABLE_JUCE "Enable JUCE-based runtime and UI" OFF)
 
 add_library(kraken_core
     src/ai/AIAssistant.cpp
@@ -24,10 +25,35 @@ add_library(kraken_core
     src/audio/StemResolver.cpp
     src/audio/Minimp3Decoder.cpp
     src/controllers/ControllerManager.cpp
+    src/runtime/ModuleOrchestrator.cpp
     src/platform/Platform.cpp
 )
 
 target_include_directories(kraken_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+if(KRAKEN_ENABLE_JUCE)
+    if(NOT TARGET juce::juce_gui_extra)
+        if(KRAKEN_ALLOW_FETCHCONTENT)
+            FetchContent_Declare(
+                juce
+                GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
+                GIT_TAG 8.0.1)
+            FetchContent_MakeAvailable(juce)
+        else()
+            find_package(JUCE 8 CONFIG REQUIRED COMPONENTS
+                juce_gui_extra
+                juce_audio_utils
+                juce_audio_devices
+                juce_dsp)
+        endif()
+    endif()
+endif()
+
+if(KRAKEN_ENABLE_JUCE)
+    target_compile_definitions(kraken_core PUBLIC KRAKEN_HAS_JUCE=1)
+else()
+    target_compile_definitions(kraken_core PUBLIC KRAKEN_HAS_JUCE=0)
+endif()
 
 FetchContent_Declare(minimp3
     GIT_REPOSITORY https://github.com/lieff/minimp3.git
@@ -64,8 +90,31 @@ target_link_libraries(kraken_core
 
 target_include_directories(kraken_core PRIVATE ${minimp3_SOURCE_DIR})
 
-add_executable(kraken_cli src/main.cpp)
+add_executable(kraken_cli
+    src/main.cpp
+    src/platform/JuceApp.cpp)
 target_link_libraries(kraken_cli PRIVATE kraken_core)
+
+if(KRAKEN_ENABLE_JUCE)
+    target_compile_definitions(kraken_cli PRIVATE KRAKEN_HAS_JUCE=1)
+else()
+    target_compile_definitions(kraken_cli PRIVATE KRAKEN_HAS_JUCE=0)
+endif()
+
+if(KRAKEN_ENABLE_JUCE)
+    target_link_libraries(kraken_cli PRIVATE
+        juce::juce_gui_extra
+        juce::juce_audio_utils
+        juce::juce_audio_devices
+        juce::juce_dsp)
+    target_compile_definitions(kraken_cli PRIVATE
+        JUCE_APPLICATION_NAME_STRING="Kraken Live"
+        JUCE_APPLICATION_VERSION_STRING="0.1.0"
+        JUCE_STANDALONE_APPLICATION=1
+        JUCE_WEB_BROWSER=0
+        JUCE_USE_CURL=0
+        JUCE_REPORT_APP_USAGE=0)
+endif()
 
 if(KRAKEN_BUILD_TESTS)
     enable_testing()
