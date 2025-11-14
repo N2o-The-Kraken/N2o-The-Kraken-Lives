@@ -301,6 +301,29 @@ int main(int argc, char** argv) {
 #endif
     }
 
+    if (launchJuce) {
+#if KRAKEN_HAS_JUCE
+        const auto platformConfig = requestedPlatform == PlatformType::Android ? androidPlatform.config() : windowsPlatform.config();
+        kraken::platform::JuceLaunchOptions options{
+            .platform = platformConfig,
+            .mixer = mixer,
+            .timeline = timeline,
+            .controllers = controllers,
+            .assistant = assistant};
+        const int result = kraken::platform::launchJuceSession(options);
+        clipA->release();
+        clipB->release();
+        assistant.endSession();
+        return result;
+#else
+        std::cerr << "This build of Kraken does not include JUCE support. Reconfigure with KRAKEN_ENABLE_JUCE=ON.\n";
+        clipA->release();
+        clipB->release();
+        assistant.endSession();
+        return 2;
+#endif
+    }
+
     assistant.setMode(AIMode::CollaborativeRecommend);
     const auto recs = assistant.recommendTracks("groove", 3);
     std::cout << "Recommended follow-ups:" << '\n';

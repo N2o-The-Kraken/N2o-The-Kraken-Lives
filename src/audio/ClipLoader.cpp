@@ -261,6 +261,98 @@ ClipLoader::Result loadAudioFile(const AudioFileClipSource& file, double expecte
 #else
     (void)expectedLengthSeconds;
     (void)file;
+
+    [[nodiscard]] std::optional<std::size_t> totalFrames() const noexcept override {
+        return m_totalFrames;
+    }
+
+    bool next(ClipStreamChunk& chunk) override {
+        if (m_position >= m_totalFrames) {
+            return false;
+        }
+
+        const std::size_t framesRemaining = m_totalFrames - m_position;
+        const std::size_t frames = std::min(m_chunkFrames, framesRemaining);
+
+        chunk.frames = frames;
+        chunk.channels.resize(m_samples.size());
+        for (std::size_t channel = 0; channel < m_samples.size(); ++channel) {
+            const auto& data = m_samples[channel];
+            chunk.channels[channel].assign(data.begin() + static_cast<std::ptrdiff_t>(m_position),
+                                           data.begin() + static_cast<std::ptrdiff_t>(m_position + frames));
+        }
+
+        m_position += frames;
+        return true;
+    }
+
+    void reset() override { m_position = 0; }
+
+private:
+    double m_sampleRate{44100.0};
+    std::vector<std::vector<float>> m_samples;
+    std::vector<ClipChannelMetadata> m_metadata;
+    std::size_t m_chunkFrames{0};
+    std::size_t m_totalFrames{0};
+    std::size_t m_position{0};
+};
+
+#if KRAKEN_HAS_SNDFILE
+ClipLoader::Result loadWithSndfile(const AudioFileClipSource& file, double expectedLengthSeconds) {
+    SF_INFO info{};
+    info.format = 0;
+
+    std::unique_ptr<SNDFILE, decltype(&sf_close)> handle(sf_open(file.file.string().c_str(), SFM_READ, &info), &sf_close);
+    if (!handle) {
+        return makeError("Failed to open audio file: " + file.file.string());
+    }
+
+    if (info.frames <= 0 || info.channels <= 0) {
+        return makeError("Audio file has no frames: " + file.file.string());
+    }
+
+    const auto metadata = ensureMetadata(file.channels, static_cast<std::size_t>(info.channels));
+    std::vector<std::vector<float>> channels(static_cast<std::size_t>(info.channels));
+    for (auto& channel : channels) {
+        channel.resize(static_cast<std::size_t>(info.frames));
+    }
+
+    std::vector<float> interleaved(static_cast<std::size_t>(info.frames * info.channels));
+    const sf_count_t read = sf_readf_float(handle.get(), interleaved.data(), info.frames);
+    if (read != info.frames) {
+        return makeError("Unable to read entire file: " + file.file.string());
+    }
+
+    for (sf_count_t frame = 0; frame < info.frames; ++frame) {
+        for (int channel = 0; channel < info.channels; ++channel) {
+            const std::size_t destIndex = static_cast<std::size_t>(frame);
+            const std::size_t sourceIndex = static_cast<std::size_t>(frame * info.channels + channel);
+            channels[static_cast<std::size_t>(channel)][destIndex] = interleaved[sourceIndex];
+        }
+    }
+
+    ClipLoader::Result result;
+    const double lengthSeconds = static_cast<double>(info.frames) / static_cast<double>(info.samplerate);
+    if (expectedLengthSeconds > 0.0 && std::abs(lengthSeconds - expectedLengthSeconds) > 0.25) {
+        result.warnings.push_back("Expected clip length " + std::to_string(expectedLengthSeconds) +
+                                   "s but decoded length is " + std::to_string(lengthSeconds) + "s");
+    }
+
+    result.buffer = ClipBuffer{.stream = std::make_shared<MemoryClipStream>(
+                        static_cast<double>(info.samplerate), std::move(channels), metadata, kDefaultChunkFrames)};
+    return result;
+}
+#endif
+
+ClipLoader::Result loadAudioFile(const AudioFileClipSource& file, double expectedLengthSeconds) {
+#if KRAKEN_HAS_SNDFILE
+    if (!file.isMp3 || !KRAKEN_HAS_MINIMP3) {
+        return loadWithSndfile(file, expectedLengthSeconds);
+    }
+    return makeError("MP3 decoding requested but minimp3 support is disabled at build time.");
+#else
+    (void)file;
+    (void)expectedLengthSeconds;
     return makeError("Audio file decoding requires libsndfile support.");
 #endif
 }
