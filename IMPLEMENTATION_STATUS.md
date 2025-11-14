@@ -38,6 +38,14 @@ below so future contributors understand why the system cannot be considered comp
 - Only a placeholder console simulation exists in `src/main.cpp`; there are no automated audio, controller, AI, or UI tests.
 - No CI configuration is present, so regressions would be difficult to detect once real subsystems are added.
 
+## 7. Modular runtime and AI debugger stubs
+- `src/runtime/ModuleOrchestrator.{h,cpp}` now sequences mixer, timeline, controller, and clip scheduling modules from the main
+  entry point so they can be started and shut down in a predictable stack. This satisfies the modular-launch requirement but
+  currently boots only the demo scaffolding—real DSP, transport, and UI work still need their own modules.
+- The accompanying `AIDebugger` helper records module failures through the existing `AIAssistant` telemetry and attempts a
+  best-effort retry. Because no remediation model ships with the repository, the debugger only reports that automated repair
+  is unavailable until local models are wired in (for example, via your Visual Studio + JUCE toolchain).
+
 ## Path to a production-ready suite
 Building the fully working system described by the vision document involves:
 1. Designing and implementing real-time audio streaming (buffer management, decoding, effect processing, and synchronization)

@@ -25,6 +25,7 @@ add_library(kraken_core
     src/audio/StemResolver.cpp
     src/audio/Minimp3Decoder.cpp
     src/controllers/ControllerManager.cpp
+    src/runtime/ModuleOrchestrator.cpp
     src/platform/Platform.cpp
 )
 

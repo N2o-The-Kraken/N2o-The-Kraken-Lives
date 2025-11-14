@@ -155,6 +155,7 @@ To complement the vision document, the repository now includes a **cross-platfor
   1. *Passive Observe* – learns performer gestures during each session and retains evolving behaviour across sets.
   2. *Collaborative Recommend* – surfaces tracks from the Hard Groove Wav Scroll Records Season 1–9 library (100 tracks per season, stems stored as zipped four-way splits and only unpacked temporarily when triggered).
   3. *Autonomous Performer* – actively issues live performance suggestions aligned to the current beat grid.
+- **Modular runtime orchestration** driven by `ModuleOrchestrator`, which stacks the mixer, timeline, controller, and clip scheduling modules from the main script. Each module failure automatically triggers the new AI debugger stub so issues are logged and surfaced for manual repair until a real remediation model is added.
 - **Controller abstraction layer** with built-in mappings for the Akai APC 64, Numark Party Mix, and Native Instruments Traktor X1 so the rig can expand to six decks or more.
 - **Platform-aware configuration** describing sample rates, buffer sizes, and interactive capabilities for both Windows and Android builds.
 
